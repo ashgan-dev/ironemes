@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <title>ironème</title>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/kickstart.js"></script> <!-- KICKSTART -->
+    <link rel="stylesheet" type="text/css" href="css/kickstart.css" media="all" /> <!-- KICKSTART -->
+    <link rel="stylesheet" type="text/css" href="css/style.css" media="all" />
+</head>
+<body class="elements">
+{{html_files}}
+    <div class="grid">
+        {%- for i in html_files: %}
+        <ul class="alt">
+            <li>
+                <a href="{{ i.name }}" target="_blank">
+                    {{ i.name }}
+                </a>
+            </li>
+        </ul>
+        {% endfor %}
+    </div>
+</body>
+</html>

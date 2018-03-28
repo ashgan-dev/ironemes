@@ -15,29 +15,29 @@
         #icon-description span{color:red;}
         </style>
         <div class="col_9">
-            {{ nb_toots }} toots exprimés au {{ now }} UTC
+            {{ nb_toots }} toots exprimés. <a href="{{ json_file.name }}" target="_blank">données brutes (format JSON)</a>
         </div>
         {%- for i in toots: %}
         <div class="col_9">
             <div id="icon-description" class="clearfix">
-            <h6><a href="{{ i['account']['url'] }}" target="_blank">
-                    <img src="{{ i['account']['avatar'] }}" height="24" width="24">
-                </a>
+                <h6><a href="{{ i['account']['url'] }}" target="_blank">
+                        <img src="{{ i['account']['avatar'] }}" height="24" width="24">
+                    </a>
 
-                <a href="{{ i['account']['url'] }}" target="_blank">
-                    {{ i['account']['username'] }}
-                </a>
-            </h6>
-            {{ i['content'] }}
-            <p>
-                <span id="{{ i['id'] }}"></span>
-                Tooté le <a href="{{ i['url'] }}" target="_blank">{{ i['created_at'] }}</a> - favoris:
-                {% if i['favourites_count'] == 0: %}
-                    {{ i['favourites_count'] }} <i class="fa fa-star-o"></i>
-                {% else: %}
-                    {{ i['favourites_count'] }} <i class="fa fa-star"></i>
-                {% endif %}
-            </p>
+                    <a href="{{ i['account']['url'] }}" target="_blank">
+                        {{ i['account']['username'] }}
+                    </a>
+                </h6>
+                {{ i['content'] }}
+                <p>
+                    <span id="{{ i['id'] }}"></span>
+                    Tooté le <a href="{{ i['url'] }}" target="_blank">{{ i['created_at']|datetimeformat }}</a> - favoris:
+                    {% if i['favourites_count'] == 0: %}
+                        {{ i['favourites_count'] }} <i class="fa fa-star-o"></i>
+                    {% else: %}
+                        {{ i['favourites_count'] }} <i class="fa fa-star"></i>
+                    {% endif %}
+                </p>
             </div>
         </div>
         {% endfor %}
