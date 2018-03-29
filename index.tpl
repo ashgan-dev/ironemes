@@ -10,7 +10,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 <body class="elements">
-{{html_files}}
     <div class="grid">
         {%- for i in html_files: %}
         <ul class="alt">
