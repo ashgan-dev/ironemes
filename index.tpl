@@ -14,7 +14,7 @@
         {%- for i in html_files: %}
         <ul class="alt">
             <li>
-                <a href="{{ i.name }}" target="_blank">
+                <a href="{{ i.name }}">
                     {{ i | proper_name }}
                 </a>
             </li>
