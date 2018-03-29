@@ -21,12 +21,13 @@ from MastodonClass import MastodonClass as Mstdn
 HASHTAGS = ['ironème', 'ironèmes', 'ironeme', 'ironemes']
 BLOCKLIST = ['TrendingBot@mastodon.social', ]
 HTMLTAGS = ['span', 'a', 'html', 'body']
-JSON_OUTPUT_FILE = 'ironemes_json_{year}_{week}.json'
-JSON_DUMP_FILE = 'ironemes.json'
-HTML_INDEX_FILE = 'index.html'
 INDEX_TEMPLATE = 'index.tpl'
 HTML_TEMPLATE_FILE = 'template.tpl'
 ROOT = path('.').realpath()
+UPLOAD_DIR = path('to_upload')
+JSON_OUTPUT_FILE = UPLOAD_DIR / 'ironemes_json_{year}_{week}.json'
+JSON_DUMP_FILE = UPLOAD_DIR / 'ironemes.json'
+HTML_INDEX_FILE = UPLOAD_DIR / 'index.html'
 
 
 def datetimeformat(value, date_format='DD/MM/YYYY à HH:mm:ss'):
@@ -40,7 +41,7 @@ def render_page():
     """
     render HTML page with toots
     """
-    json_files = ROOT.files('*.json')
+    json_files = UPLOAD_DIR.files('*.json')
 
     templateloader = jinja2.FileSystemLoader(searchpath=ROOT, encoding='utf-8')
     templateenv = jinja2.Environment(loader=templateloader)
@@ -56,11 +57,11 @@ def render_page():
                                       nb_toots=y,
                                       json_file=i)
 
-        with open(i.namebase + '.html', 'wb') as outfile:
+        with open(UPLOAD_DIR / i.namebase + '.html', 'wb') as outfile:
             outfile.write(output_html.encode('utf-8'))
 
     template = templateenv.get_template(INDEX_TEMPLATE)
-    html_files = ROOT.files('*.html')
+    html_files = UPLOAD_DIR.files('*.html')
     index_html = template.render(html_files=html_files)
 
     with open(HTML_INDEX_FILE, 'wb') as outfile:
@@ -193,6 +194,8 @@ connection = Mstdn(config['Auth']['instance'],
                    ROOT)
 connection.initialize()
 api = connection.mastodon
+
+path.makedirs_p(UPLOAD_DIR)
 
 toots_list = get_hashtags(HASHTAGS, api, config['Auth']['instance'])
 split_json(toots_list[0])
