@@ -20,7 +20,7 @@ from MastodonClass import MastodonClass as Mstdn
 HASHTAGS = ['ironème', 'ironèmes', 'ironeme', 'ironemes']
 BLOCKLIST = ['TrendingBot@mastodon.social', ]
 HTMLTAGS = ['span', 'a', 'html', 'body']
-INDEX_TEMPLATE = 'index.tpl'
+INDEX_TEMPLATE = 'index2.tpl'
 HTML_TEMPLATE_FILE = 'template2.tpl'
 ROOT = path('.').realpath()
 UPLOAD_DIR = path('to_upload2')
