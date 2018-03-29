@@ -40,16 +40,21 @@ def proper_name(value):
     """
     formating ironemes dates and files
     """
-    x = value.stripext().split('_')
-    semaine = x[-2:]
-    return 'ironèmes {}, semaine {}'.format(semaine[0], semaine[1])
+    if 'json' not in value:
+        return 'ironemes'
+    else:
+        x = value.stripext().split('_')
+        semaine = x[-2:]
+        return 'ironèmes {}, semaine {}'.format(semaine[0], semaine[1])
 
 
 def render_page():
     """
     render HTML page with toots
     """
-    json_files = UPLOAD_DIR.files('*.json')
+    json_files = list()
+    for x in UPLOAD_DIR.walkfiles('*.json'):
+        json_files.append(x)
 
     templateloader = jinja2.FileSystemLoader(searchpath=ROOT, encoding='utf-8')
     templateenv = jinja2.Environment(loader=templateloader)
@@ -70,7 +75,10 @@ def render_page():
             outfile.write(output_html.encode('utf-8'))
 
     template = templateenv.get_template(INDEX_TEMPLATE)
-    html_files = UPLOAD_DIR.files('*.html')
+    html_files = list()
+    for i in UPLOAD_DIR.walkfiles('*.html'):
+        html_files.append(i.name)
+    html_files.remove('index.html')
     index_html = template.render(html_files=html_files)
 
     with open(HTML_INDEX_FILE, 'wb') as outfile:
@@ -149,7 +157,7 @@ def get_hashtags(hashtags, api_endpoint, instance_url):
         # get @local.instance because local toots are returned only with the
         # account name
         localinstance = '@' + urlparse(instance_url).netloc
-        while tootcnt < 20: # True:
+        while True: #tootcnt < 20: # True:
             toots = api_endpoint.timeline_hashtag(hashtag, max_id=maxid, limit=40)
             if len(toots) == 0:
                 break

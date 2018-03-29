@@ -29,8 +29,8 @@
                 {%- for i in html_files: %}
                 <ul class="list-unstyled">
                     <li>
-                        <a href="{{ i.name }}">
-                            {{ i | proper_name }}
+                        <a href="{{ i }}">
+                            {{ i.name.stripext() | proper_name }}
                         </a>
                     </li>
                 </ul>

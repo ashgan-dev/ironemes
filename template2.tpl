@@ -23,11 +23,15 @@
             <li class="breadcrumb-item">
                 <a href="index.html">Index</a>
             </li>
-            <li class="breadcrumb-item active">semaine du blah blah blah</li>
+            <li class="breadcrumb-item active">
+                {{ json_file.stripext() | proper_name }}
+            </li>
         </ol>
         <div class="row">
             <div class="col-12">
-                {{ nb_toots }} toots exprimés. <a href="{{ json_file.name }}" target="_blank">données brutes (format JSON)</a>
+                <h6 class="page-header">
+                    {{ nb_toots }} toots exprimés. <a href="{{ json_file.name }}" target="_blank">données brutes (format JSON)</a>
+                </h6>
             </div>
         </div>
         {%- for i in toots: %}
@@ -40,7 +44,6 @@
                             <a href="{{ i['account']['url'] }}" target="_blank">
                                 <img src="{{ i['account']['avatar'] }}" height="24" width="24">
                             </a>
-
                             <a href="{{ i['account']['url'] }}" target="_blank">
                                 {% if i['account']['display_name'] != '': %}
                                     {{ i['account']['display_name'] }}
@@ -49,19 +52,21 @@
                                 {% endif %}
                             </a>
                         </h6>
-                    <div class="card-body">
-                    <div class="table-responsive">
-                        {{ i['content'] }}
                     </div>
-                </div>
-                <div class="card-footer small text-muted">
-                    <span id="{{ i['id'] }}"></span>
-                    Tooté le <a href="{{ i['url'] }}" target="_blank">{{ i['created_at']|datetimeformat }}</a> - favoris:
-                    {% if i['favourites_count'] == 0: %}
-                        {{ i['favourites_count'] }} <i class="fa fa-star-o"></i>
-                    {% else: %}
-                        {{ i['favourites_count'] }} <i class="fa fa-star"></i>
-                    {% endif %}
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            {{ i['content'] }}
+                        </div>
+                    </div>
+                    <div class="card-footer small text-muted">
+                        <span id="{{ i['id'] }}"></span>
+                        Tooté le <a href="{{ i['url'] }}" target="_blank">{{ i['created_at']|datetimeformat }}</a> - favoris:
+                        {% if i['favourites_count'] == 0: %}
+                            {{ i['favourites_count'] }} <i class="fa fa-star-o"></i>
+                        {% else: %}
+                            {{ i['favourites_count'] }} <i class="fa fa-star"></i>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
