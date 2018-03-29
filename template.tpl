@@ -26,7 +26,11 @@
                     </a>
 
                     <a href="{{ i['account']['url'] }}" target="_blank">
-                        {{ i['account']['username'] }}
+                        {% if i['account']['display_name'] != '': %}
+                            {{ i['account']['display_name'] }}
+                        {% else: %}
+                            {{ i['account']['username'] }}
+                        {% endif %}
                     </a>
                 </h6>
                 {{ i['content'] }}

@@ -7,9 +7,8 @@
 import json
 import time
 from configparser import ConfigParser
-from ftplib import FTP
-from urllib.parse import urlparse
 from operator import itemgetter
+from urllib.parse import urlparse
 
 import arrow
 import jinja2
@@ -37,6 +36,15 @@ def datetimeformat(value, date_format='DD/MM/YYYY à HH:mm:ss'):
     return arrow.get(value).format(date_format)
 
 
+def proper_name(value):
+    """
+    formating ironemes dates and files
+    """
+    x = value.stripext().split('_')
+    semaine = x[-2:]
+    return 'ironèmes {}, semaine {}'.format(semaine[0], semaine[1])
+
+
 def render_page():
     """
     render HTML page with toots
@@ -46,6 +54,7 @@ def render_page():
     templateloader = jinja2.FileSystemLoader(searchpath=ROOT, encoding='utf-8')
     templateenv = jinja2.Environment(loader=templateloader)
     templateenv.filters['datetimeformat'] = datetimeformat
+    templateenv.filters['proper_name'] = proper_name
     template_name = HTML_TEMPLATE_FILE
     template = templateenv.get_template(template_name)
 
@@ -140,7 +149,7 @@ def get_hashtags(hashtags, api_endpoint, instance_url):
         # get @local.instance because local toots are returned only with the
         # account name
         localinstance = '@' + urlparse(instance_url).netloc
-        while True:
+        while tootcnt < 20: # True:
             toots = api_endpoint.timeline_hashtag(hashtag, max_id=maxid, limit=40)
             if len(toots) == 0:
                 break
@@ -200,13 +209,13 @@ path.makedirs_p(UPLOAD_DIR)
 toots_list = get_hashtags(HASHTAGS, api, config['Auth']['instance'])
 split_json(toots_list[0])
 render_page()
-# print(get_context(99723799065931813, api))
-# print(get_context(99626644990501540, api))
 
-# ftp = FTP(config['FTP']['host'],
-#           config['FTP']['user'],
-#           config['FTP']['password'])
-# f_name = HTML_OUPUT_FILE
-# f = open(f_name, 'rb')
-# ftp.storbinary('STOR ' + f_name, f)
-# f.close()
+# quoi faire de ca? utile?
+# je verrais bien le toot d'origine,
+# et un clic sur "learn more" et bam l'historique qui depile
+
+
+# toot "remi sans famille", seul au monde
+# toot_alone = get_context(99723799065931813, api)
+# et un avec du contexte
+# moucho_story = get_context(99626644990501540, api)

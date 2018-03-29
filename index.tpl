@@ -15,7 +15,7 @@
         <ul class="alt">
             <li>
                 <a href="{{ i.name }}" target="_blank">
-                    {{ i.name }}
+                    {{ i | proper_name }}
                 </a>
             </li>
         </ul>
