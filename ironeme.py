@@ -20,10 +20,10 @@ from MastodonClass import MastodonClass as Mstdn
 HASHTAGS = ['ironème', 'ironèmes', 'ironeme', 'ironemes']
 BLOCKLIST = ['TrendingBot@mastodon.social', ]
 HTMLTAGS = ['span', 'a', 'html', 'body']
-INDEX_TEMPLATE = 'index2.tpl'
-HTML_TEMPLATE_FILE = 'template2.tpl'
+INDEX_TEMPLATE = 'index.tpl'
+HTML_TEMPLATE_FILE = 'template.tpl'
 ROOT = path('.').realpath()
-UPLOAD_DIR = path('to_upload2')
+UPLOAD_DIR = path('to_upload')
 JSON_OUTPUT_FILE = UPLOAD_DIR / 'ironemes_json_{year}_{week}.json'
 JSON_DUMP_FILE = UPLOAD_DIR / 'ironemes.json'
 HTML_INDEX_FILE = UPLOAD_DIR / 'index.html'
@@ -89,7 +89,7 @@ def clean_html(content):
     """
     remove unwanted html tags from toot content
     """
-    content_to_parse = BeautifulSoup(content, "html.parser")
+    content_to_parse = BeautifulSoup(content, "lxml-xml")
     # gently remove tags and CSS stuff, keeping content
     # only <p> and <br> should remain.
     for i in HTMLTAGS:
@@ -157,7 +157,7 @@ def get_hashtags(hashtags, api_endpoint, instance_url):
         # get @local.instance because local toots are returned only with the
         # account name
         localinstance = '@' + urlparse(instance_url).netloc
-        while True: #tootcnt < 20: # True:
+        while tootcnt < 20: # True:
             toots = api_endpoint.timeline_hashtag(hashtag, max_id=maxid, limit=40)
             if len(toots) == 0:
                 break
