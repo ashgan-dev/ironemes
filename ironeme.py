@@ -9,10 +9,11 @@ import time
 from configparser import ConfigParser
 from operator import itemgetter
 from urllib.parse import urlparse
+from html2text import HTML2Text
+
 
 import arrow
 import jinja2
-from bs4 import BeautifulSoup
 from path import path
 
 from MastodonClass import MastodonClass as Mstdn
@@ -85,28 +86,24 @@ def render_page():
         outfile.write(index_html.encode('utf-8'))
 
 
-def clean_html(content):
+def to_text(html, rehtml=False):
     """
-    remove unwanted html tags from toot content
+    get text only from toot content
     """
-    content_to_parse = BeautifulSoup(content, "lxml-xml")
-    # gently remove tags and CSS stuff, keeping content
-    # only <p> and <br> should remain.
-    for i in HTMLTAGS:
-        for j in content_to_parse.find_all(i):
-            j.unwrap()
-    # bruteforce anihilation of iframe/script tags.
-    # should not exist because of API cleaning,
-    # but who knows?!?
-    try:
-        content_to_parse.iframe.extract()
-    except AttributeError:
-        pass
-    try:
-        content_to_parse.script.extract()
-    except AttributeError:
-        pass
-    return str(content_to_parse)
+    parser = HTML2Text()
+    parser.wrap_links = False
+    parser.skip_internal_links = True
+    parser.inline_links = True
+    parser.ignore_anchors = True
+    parser.ignore_images = True
+    parser.ignore_emphasis = True
+    parser.ignore_links = True
+    text = parser.handle(html)
+    text = text.strip(' \t\n\r')
+    if rehtml:
+        text = text.replace('\n', '<br/>')
+        text = text.replace('\\', '')
+    return text
 
 
 def get_context(toot_id, api_endpoint):
@@ -157,14 +154,14 @@ def get_hashtags(hashtags, api_endpoint, instance_url):
         # get @local.instance because local toots are returned only with the
         # account name
         localinstance = '@' + urlparse(instance_url).netloc
-        while tootcnt < 20: # True:
+        while True: #tootcnt < 20: # True:
             toots = api_endpoint.timeline_hashtag(hashtag, max_id=maxid, limit=40)
             if len(toots) == 0:
                 break
             for toot in toots:
                 toot_date = arrow.get(toot['account']['created_at'])
                 account = toot['account']['acct']
-                toot['content'] = clean_html(toot['content'])
+                toot['content'] = to_text(toot['content'], rehtml=True)
                 toot['account']['created_at'] = toot_date.for_json()
                 toot['created_at'] = arrow.get(toot['created_at']).for_json()
 
