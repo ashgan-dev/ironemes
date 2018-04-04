@@ -1,17 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from flask import Flask, render_template, request, send_from_directory
-from sqlalchemy import func
-from flask_sqlalchemy import SQLAlchemy
-from configparser import ConfigParser
-from path import path
+# forked from https://github.com/Meewan/MercrediFiction
+
 # from MastodonClass import MastodonClass as Mstdn
 import time
-from html2text import HTML2Text
-from urllib.parse import urlparse
+from configparser import ConfigParser
 from datetime import datetime
+from pprint import pprint
+from urllib.parse import urlparse
+
 import requests
+from flask import Flask  # , render_template, request, send_from_directory
+# from sqlalchemy import func
+from flask_sqlalchemy import SQLAlchemy
+from html2text import HTML2Text
+from path import path
 
 ROOT = path('.').realpath()
 HASHTAGS = ['ironème', 'ironèmes', 'ironeme', 'ironemes']
@@ -68,6 +72,7 @@ class Instance(db.Model):
     accounts = db.relationship('Account', backref='instance', lazy='dynamic')
     lock = db.Column(db.Boolean)
     blacklisted = db.Column(db.Boolean)
+    last_seen_id = db.Column(db.Integer)
 
 
 class Missed_Link(db.Model):
@@ -76,11 +81,17 @@ class Missed_Link(db.Model):
 
 
 def save(obj):
+    """
+    commit change to DB
+    """
     db.session.add(obj)
     db.session.commit()
 
 
 def save_account(instance_name, content):
+    """
+    record account on DB and return id
+    """
     acct = content['username']
     if not Account.query.filter_by(username=acct).count():
         account = Account(mastodon_id=content['id'],
@@ -100,26 +111,19 @@ def save_account(instance_name, content):
 
 
 def add_domain_to_db(domain):
+    """
+    record instance on DB and return id
+    """
     if not Instance.query.filter_by(domain=domain).count():
         instance = Instance(creation_date=datetime.now(),
                             domain=domain,
                             lock=False,
-                            blacklisted=False)
+                            blacklisted=False,
+                            last_seen_id=0)
         save(instance)
     else:
         instance = Instance.query.filter_by(domain=domain).first()
     return instance.id
-
-
-db.create_all()
-
-# setup mastodon api
-# connection = Mstdn(config['Auth']['instance'],
-#                    config['Auth']['usermail'],
-#                    config['Auth']['userpass'],
-#                    ROOT)
-# connection.initialize()
-# api = connection.mastodon
 
 
 def to_text(html, rehtml=False):
@@ -142,73 +146,95 @@ def to_text(html, rehtml=False):
     return text
 
 
-def get_hashtags(hashtags, instance_url):
+def get_hashtags(instance_url):
     """
     fetches all toots for a given hashtag on given instance
     """
-    for hashtag in hashtags:
-        next_fetch = API_URL.format(domain=instance_url,
-                                    hashtag=hashtag,
-                                    since_id=0,
-                                    limit=40)
-        # l'id le plus haut pour une instance donnee
-        # last_instance_id = max([y.mastodon_id for y in Toot.query.filter_by(domain=instance).all()])
-        while next_fetch is not None:
+    ref_id = 0
+    next_fetch = instance_url
+    local_instance_url = urlparse(instance_url).netloc
+    instance_details = Instance.query.filter_by(domain=local_instance_url).first()
+    # l'id le plus haut pour l'instance en cours:
+    last_instance_toot_id = instance_details.last_seen_id
+
+    pprint(last_instance_toot_id)
+
+    while True:
+        pprint('id in db:' + str(last_instance_toot_id))
+        try:
+            local_toots = requests.get(next_fetch,
+                                       timeout=120)
+        except:
+            # something bad happened, store URL to fetch later
+            missed_link = Missed_Link(url=next_fetch)
+            save(missed_link)
+
+        if local_toots:
+            pprint(local_toots.links)
             try:
-                request_url = next_fetch
-                local_toots = requests.get(request_url,
-                                           timeout=120)
-            except:
-                # something bad happened, store URL to fetch later
-                missed_link = Missed_Link(url=request_url)
-                save(missed_link)
+                for toot in local_toots.json():
+                    account = toot['account']['acct']
+                    instance = urlparse(toot['url']).netloc
+                    if not Instance.query.filter_by(domain=instance).first():
+                        instance_id = add_domain_to_db(instance)
+                    else:
+                        instance_id = Instance.query.filter_by(domain=instance).first().id
+                    # print(instance_id)
 
-            if local_toots:
-                print(local_toots.links)
-                try:
-                    next_fetch = local_toots.links['next']['url']
-                    for toot in local_toots.json():
-                        account = toot['account']['acct']
-                        instance = urlparse(toot['url']).netloc
-                        if not Instance.query.filter_by(domain=instance).first():
-                            instance_id = add_domain_to_db(instance)
-                        else:
-                            instance_id = Instance.query.filter_by(domain=instance).first().id
-                        # print(instance_id)
+                    if '@' not in account:
+                        # we got local account.
+                        # so, genuine toots, not federated ones.
+                        # let's grab it by the user!
+                        account = account + '@' + instance_url
+                        account = save_account(instance_id, toot['account'])
 
-                        if '@' not in account:
-                            # we got local account.
-                            # so, genuine toots, not federated ones.
-                            # let's grab it by the user!
-                            account = account + '@' + instance_url
-                            account = save_account(instance_id, toot['account'])
+                        existing_toot = Toot.query.filter_by(mastodon_id=toot['id'],
+                                                             instance_id=instance_id).first()
+                        if not existing_toot:
+                            db_toot = Toot(mastodon_id=toot['id'],
+                                           creation_date=datetime.strptime(toot['created_at'],
+                                                                           '%Y-%m-%dT%H:%M:%S.%fZ'),
+                                           sensitive=toot['sensitive'],
+                                           account_id=account,
+                                           content=to_text(toot['content'], rehtml=True),
+                                           instance_id=instance_id,
+                                           url=toot['url'],
+                                           favourite_count=toot['favourites_count'],
+                                           reblog_count=toot['reblogs_count'],
+                                           blacklisted=False)
+                            save(db_toot)
+                next_fetch = local_toots.links['next']['url']
+                id_to_fetch = int(next_fetch.split('=')[-1])
+                if id_to_fetch > ref_id:
+                    ref_id = id_to_fetch
 
-                            existing_toot = Toot.query.filter_by(mastodon_id=toot['id'], instance_id=instance_id).first()
-                            if not existing_toot:
-                                db_toot = Toot(mastodon_id=toot['id'],
-                                               creation_date=datetime.strptime(toot['created_at'],
-                                                                               '%Y-%m-%dT%H:%M:%S.%fZ'),
-                                               sensitive=toot['sensitive'],
-                                               account_id=account,
-                                               content=to_text(toot['content'], rehtml=True),
-                                               instance_id=instance_id,
-                                               url=toot['url'],
-                                               favourite_count=toot['favourites_count'],
-                                               reblog_count=toot['reblogs_count'],
-                                               blacklisted=False)
-                                save(db_toot)
-
-                    time.sleep(1)  # avoid hitting limit rates
-                except (KeyError, ):
-                    # no more dicts, no scraping left
+                pprint('next id:  ' + str(next_fetch.split('=')[-1]))
+                if last_instance_toot_id > id_to_fetch:
+                    # instance_details.last_seen_id = last_instance_toot_id
+                    # save(instance_details)
                     break
 
+                time.sleep(1)  # avoid hitting limit rates
+            except (KeyError, ):
+                # no more dicts, no scraping left
+                # oui did it \o/
+                break
+    instance_details.last_seen_id = ref_id
+    save(instance_details)
+
+
+db.create_all()
 
 if not Instance.query.filter_by(domain=config['Auth']['instance']).first():
     add_domain_to_db(urlparse(config['Auth']['instance']).netloc)
 
-for i in [x.domain for x in Instance.query.all()]:
-    print(i)
-    get_hashtags(HASHTAGS, i)
+for k in HASHTAGS:
+    for i in [x.domain for x in Instance.query.all()]:
+        to_fetch = API_URL.format(domain=i,
+                                  hashtag=k,
+                                  since_id=0,
+                                  limit=40)
+        print(i)
+        get_hashtags(to_fetch)
 
 app.run()
