@@ -72,12 +72,19 @@ class Instance(db.Model):
     accounts = db.relationship('Account', backref='instance', lazy='dynamic')
     lock = db.Column(db.Boolean)
     blacklisted = db.Column(db.Boolean)
-    last_seen_id = db.Column(db.Integer)
 
 
 class Missed_Link(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     url = db.Column(db.String(4095))
+    time_misses = db.Column(db.Integer)
+
+
+class Hashtags(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    tag = db.Column(db.String(4095))
+    last_seen_id = db.Column(db.Integer)
+    instance_id = db.Column(db.Integer, db.ForeignKey('instance.id'))
 
 
 def save(obj):
@@ -118,8 +125,7 @@ def add_domain_to_db(domain):
         instance = Instance(creation_date=datetime.now(),
                             domain=domain,
                             lock=False,
-                            blacklisted=False,
-                            last_seen_id=0)
+                            blacklisted=False)
         save(instance)
     else:
         instance = Instance.query.filter_by(domain=domain).first()
@@ -155,12 +161,13 @@ def get_hashtags(instance_url):
     local_instance_url = urlparse(instance_url).netloc
     instance_details = Instance.query.filter_by(domain=local_instance_url).first()
     # l'id le plus haut pour l'instance en cours:
-    last_instance_toot_id = instance_details.last_seen_id
-
-    pprint(last_instance_toot_id)
+    try:
+        hastag_detail = Hashtags.query.filter_by(instance_id=instance_details.id).first()
+        last_instance_toot_id = hastag_detail.last_seen_id
+    except:
+        last_instance_toot_id = 0
 
     while True:
-        pprint('id in db:' + str(last_instance_toot_id))
         try:
             local_toots = requests.get(next_fetch,
                                        timeout=120)
@@ -170,7 +177,6 @@ def get_hashtags(instance_url):
             save(missed_link)
 
         if local_toots:
-            pprint(local_toots.links)
             try:
                 for toot in local_toots.json():
                     account = toot['account']['acct']
@@ -179,7 +185,6 @@ def get_hashtags(instance_url):
                         instance_id = add_domain_to_db(instance)
                     else:
                         instance_id = Instance.query.filter_by(domain=instance).first().id
-                    # print(instance_id)
 
                     if '@' not in account:
                         # we got local account.
@@ -210,8 +215,6 @@ def get_hashtags(instance_url):
 
                 pprint('next id:  ' + str(next_fetch.split('=')[-1]))
                 if last_instance_toot_id > id_to_fetch:
-                    # instance_details.last_seen_id = last_instance_toot_id
-                    # save(instance_details)
                     break
 
                 time.sleep(1)  # avoid hitting limit rates
@@ -219,8 +222,13 @@ def get_hashtags(instance_url):
                 # no more dicts, no scraping left
                 # oui did it \o/
                 break
-    instance_details.last_seen_id = ref_id
-    save(instance_details)
+    # houla, cuila y pique!
+    tag_name = instance_url.split('?')[0].split('/')[-1]
+    # no update for now -> bug!!!!
+    hastags = Hashtags(tag=tag_name,
+                       last_seen_id=ref_id,
+                       instance_id=instance_details.id)
+    save(hastags)
 
 
 db.create_all()
