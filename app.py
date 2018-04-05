@@ -16,6 +16,9 @@ from flask import Flask  # , render_template, request, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from html2text import HTML2Text
 from path import path
+import dramatiq
+
+from dramatiq.brokers.rabbitmq import RabbitmqBroker
 
 ROOT = path('.').realpath()
 HASHTAGS = ['ironème', 'ironèmes', 'ironeme', 'ironemes']
@@ -213,7 +216,6 @@ def get_hashtags(instance_url):
                 if id_to_fetch > ref_id:
                     ref_id = id_to_fetch
 
-                pprint('next id:  ' + str(next_fetch.split('=')[-1]))
                 if last_instance_toot_id > id_to_fetch:
                     break
 
@@ -225,10 +227,16 @@ def get_hashtags(instance_url):
     # houla, cuila y pique!
     tag_name = instance_url.split('?')[0].split('/')[-1]
     # no update for now -> bug!!!!
-    hastags = Hashtags(tag=tag_name,
-                       last_seen_id=ref_id,
-                       instance_id=instance_details.id)
-    save(hastags)
+    hastag_detail = Hashtags.query.filter_by(instance_id=instance_details.id).first()
+    try:
+        hastag_detail.tag = tag_name
+        hastag_detail.last_seen_id = ref_id
+        save(hastag_detail)
+    except:
+        hastag_detail = Hashtags(tag=tag_name,
+                                 last_seen_id=ref_id,
+                                 instance_id=instance_details.id)
+        save(hastag_detail)
 
 
 db.create_all()
