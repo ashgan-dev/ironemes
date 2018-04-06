@@ -3,21 +3,17 @@
 
 # forked from https://github.com/Meewan/MercrediFiction
 
-# from MastodonClass import MastodonClass as Mstdn
 import time
 from configparser import ConfigParser
 from datetime import datetime
-from pprint import pprint
+from multiprocessing.pool import Pool
 from urllib.parse import urlparse
 
 import requests
 from flask import Flask  # , render_template, request, send_from_directory
-# from sqlalchemy import func
 from flask_sqlalchemy import SQLAlchemy
 from html2text import HTML2Text
 from path import Path
-
-from multiprocessing.pool import Pool
 
 ROOT = Path('.').realpath()
 HASHTAGS = ['ironème', 'ironèmes', 'ironeme', 'ironemes']
@@ -32,15 +28,24 @@ configini = ROOT / 'config.ini'
 config = ConfigParser()
 config.read(configini)
 
+
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ironemes.db'
+# for small configs, use sqlite, with small number of worker (tested with 4 at best on my laptop)
+# big irons, go full blast!
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ironemes.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://{user}:{password}@{DB_host}:{port}/{database}'.format(user=config['DB']['user'],
+                                                                                                            password=config['DB']['password'],
+                                                                                                            DB_host=config['DB']['DB_host'],
+                                                                                                            port=config['DB']['port'],
+                                                                                                            database=config['DB']['database'])
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 
 class Toot(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    mastodon_id = db.Column(db.Integer)
+    mastodon_id = db.Column(db.BigInteger)
     creation_date = db.Column(db.DateTime)
     sensitive = db.Column(db.Boolean)
     content = db.Column(db.String(4095))
@@ -85,7 +90,7 @@ class Missed_Link(db.Model):
 class Hashtags(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     tag = db.Column(db.String(4095))
-    last_seen_id = db.Column(db.Integer)
+    last_seen_id = db.Column(db.BigInteger)
     instance_id = db.Column(db.Integer, db.ForeignKey('instance.id'))
 
 
@@ -229,7 +234,6 @@ def get_hashtags(instance_url):
             save(missed_link)
     # houla, cuila y pique!
     tag_name = instance_url.split('?')[0].split('/')[-1]
-    # no update for now -> bug!!!!
     hastag_detail = Hashtags.query.filter_by(instance_id=instance_details.id).first()
     try:
         hastag_detail.tag = tag_name
@@ -240,8 +244,6 @@ def get_hashtags(instance_url):
                                  last_seen_id=ref_id,
                                  instance_id=instance_details.id)
         save(hastag_detail)
-
-
 
 
 db.create_all()
@@ -256,9 +258,7 @@ if __name__ == '__main__':
                                            hashtag=k,
                                            since_id=0,
                                            limit=40))
-            # get_hashtags(to_fetch)
     with Pool(8) as p:
         result = p.map(get_hashtags, to_fetch)
-        # result.get(timeout=360)
 
     # app.run()
