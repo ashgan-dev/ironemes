@@ -15,18 +15,17 @@ from flask import Flask  # , render_template, request, send_from_directory
 # from sqlalchemy import func
 from flask_sqlalchemy import SQLAlchemy
 from html2text import HTML2Text
-from path import path
-import dramatiq
+from path import Path
 
-from dramatiq.brokers.rabbitmq import RabbitmqBroker
+from multiprocessing.pool import Pool
 
-ROOT = path('.').realpath()
+ROOT = Path('.').realpath()
 HASHTAGS = ['ironème', 'ironèmes', 'ironeme', 'ironemes']
 BLOCKLIST = ['TrendingBot@mastodon.social', ]
 # API management
 API_URL = 'https://{domain}/api/v1/timelines/tag/{hashtag}?limit={limit}&since_id={since_id}'
 
-path.chdir(ROOT)
+Path.chdir(ROOT)
 
 # fetch/define config
 configini = ROOT / 'config.ini'
@@ -159,6 +158,7 @@ def get_hashtags(instance_url):
     """
     fetches all toots for a given hashtag on given instance
     """
+    print(instance_url)
     ref_id = 0
     next_fetch = instance_url
     local_instance_url = urlparse(instance_url).netloc
@@ -224,6 +224,9 @@ def get_hashtags(instance_url):
                 # no more dicts, no scraping left
                 # oui did it \o/
                 break
+        else:
+            missed_link = Missed_Link(url=next_fetch)
+            save(missed_link)
     # houla, cuila y pique!
     tag_name = instance_url.split('?')[0].split('/')[-1]
     # no update for now -> bug!!!!
@@ -239,18 +242,23 @@ def get_hashtags(instance_url):
         save(hastag_detail)
 
 
+
+
 db.create_all()
 
 if not Instance.query.filter_by(domain=config['Auth']['instance']).first():
     add_domain_to_db(urlparse(config['Auth']['instance']).netloc)
+if __name__ == '__main__':
+    to_fetch = list()
+    for k in HASHTAGS:
+        for i in [x.domain for x in Instance.query.all()]:
+            to_fetch.append(API_URL.format(domain=i,
+                                           hashtag=k,
+                                           since_id=0,
+                                           limit=40))
+            # get_hashtags(to_fetch)
+    with Pool(8) as p:
+        result = p.map(get_hashtags, to_fetch)
+        # result.get(timeout=360)
 
-for k in HASHTAGS:
-    for i in [x.domain for x in Instance.query.all()]:
-        to_fetch = API_URL.format(domain=i,
-                                  hashtag=k,
-                                  since_id=0,
-                                  limit=40)
-        print(i)
-        get_hashtags(to_fetch)
-
-app.run()
+    # app.run()
