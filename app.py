@@ -33,10 +33,10 @@ config.read(configini)
 app = Flask(__name__)
 # for small configs, use sqlite, with small number of worker (tested with 4 at best on my laptop)
 # big irons, go full blast!
-# db = PostgresqlDatabase(config['DB']['database'],
-#                         user=config['DB']['user'],
-#                         password=config['DB']['password'])
-db = SqliteDatabase('app.db')
+db = PostgresqlDatabase(config['DB']['database'],
+                        user=config['DB']['user'],
+                        password=config['DB']['password'])
+# db = SqliteDatabase('app.db')
 
 
 class Instance(Model):
@@ -139,8 +139,6 @@ def get_hashtags(instance_url):
     fetches all toots for a given hashtag on given instance
     """
     print(instance_url)
-    # last toot ID seen on the current instance
-    ref_id = 0
     # current instance URL
     next_fetch = instance_url
     # current instance DB details already on DB
@@ -150,11 +148,14 @@ def get_hashtags(instance_url):
     # hashtags details:
     # houla, cuila y pique!
     tag_name = instance_url.split('?')[0].split('/')[-1]
+    # we don't have any id,
+    # so let's set it to 0 for the 1st pass
+    ref_id = int(instance_url.split('=')[-1])
 
     # did we have already parsed someting?
     hashtag_detail, _ = Hashtags.get_or_create(instance_id=instance_details.id,
-                                               last_seen_id=0,
-                                               tag=tag_name)
+                                               tag=tag_name,
+                                               defaults={'last_seen_id': 0})
 
     local_toots = None
     while True:
@@ -206,11 +207,15 @@ def get_hashtags(instance_url):
                                                                      'reblog_count': toot['reblogs_count'],
                                                                      'blacklisted': False})
 
+                # next URL to fetch
                 next_fetch = local_toots.links['next']['url']
                 id_to_fetch = int(next_fetch.split('=')[-1])
+                # we want to keep biggest id ever seen on the whole loop
+                # so we pass it from loop to loop
                 if id_to_fetch > ref_id:
                     ref_id = id_to_fetch
 
+                #
                 if hashtag_detail.last_seen_id > id_to_fetch:
                     break
 
@@ -223,8 +228,9 @@ def get_hashtags(instance_url):
             missed_link = MissedLink.get_or_create(url=next_fetch,
                                                    defaults={'time_misses': 0})
 
+    # at last, we update the hashtags id with the biggest one!
     query = Hashtags.update(last_seen_id=ref_id).where((Hashtags.instance_id == instance_details.id) &
-                                                       (Hashtags.tag == hastag_detail.tag))
+                                                       (Hashtags.tag == hashtag_detail.tag))
     query.execute()
 
 
@@ -258,7 +264,7 @@ if __name__ == '__main__':
     # we're *not really* CPU/mem/HDD bound. so yepekai!
     # for info, with 32 workers, on average:
     # <2Mbits/s download, 25-50% CPU, 1.5/2Go Ram, <10% HDD use on my core I7-4710 laptop
-    with Pool(4) as p:
+    with Pool(64) as p:
         result = p.map(get_hashtags, to_fetch)
 
     app.run(debug=True)
