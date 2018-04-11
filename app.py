@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 
 import arrow
 import requests
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from html2text import HTML2Text
 from path import Path
 from peewee import *
@@ -184,16 +184,17 @@ def get_hashtags(instance_url):
                         # so, genuine toots, not federated ones.
                         # let's grab it by the user!
                         account = account + '@' + instance_url
+
                         account_saved, _ = Account.get_or_create(mastodon_id=toot['account']['id'],
-                                                        defaults={'username': toot['account']['username'],
-                                                                  'display_name': to_text(toot['account']['display_name']),
-                                                                  'creation_date': datetime.strptime(toot['account']['created_at'],
-                                                                                                   '%Y-%m-%dT%H:%M:%S.%fZ'),
-                                                                  'note': to_text(toot['account']['note']),
-                                                                  'url': toot['account']['url'],
-                                                                  'avatar': toot['account']['avatar'],
-                                                                  'instance_id': instance_id.id,
-                                                                  'blacklisted': False})
+                                                                 defaults={'username': toot['account']['username'],
+                                                                           'display_name': to_text(toot['account']['display_name']),
+                                                                           'creation_date': datetime.strptime(toot['account']['created_at'],
+                                                                                                              '%Y-%m-%dT%H:%M:%S.%fZ'),
+                                                                           'note': to_text(toot['account']['note']),
+                                                                           'url': toot['account']['url'],
+                                                                           'avatar': toot['account']['avatar'],
+                                                                           'instance_id': instance_id.id,
+                                                                           'blacklisted': False})
 
                         toot_saved, _ = Toot.get_or_create(url=toot['url'],
                                                            defaults={'creation_date': datetime.strptime(toot['created_at'],
@@ -237,11 +238,37 @@ def get_hashtags(instance_url):
 app.add_template_filter(datetimeformat)
 
 
-@app.route('/')
+@app.route('/', methods=['POST', 'GET'])
 def start_page():
     """main page"""
-    return render_template('template.tpl',
-                           toots=Toot.select().order_by(Toot.creation_date))
+    # some needed infos
+    instances_names = Instance.select()
+    selected_toots = Toot.select().order_by(Toot.creation_date.desc())
+
+    if request.method == 'POST':
+        requested_date = request.form['date']
+        requested_instance = int(request.form['instance'])
+
+        # nice, we can filter more afterward!
+        # let's go.
+        if requested_date is not '':
+            # okay, *THIS* is a joke.
+            # no direct date filter/comparaison on a datetime?
+            # seriously?!? even MYSQL has a date() damn fonction!!!
+            a = datetime.strptime(requested_date, '%Y-%m-%d')
+            selected_toots = selected_toots.where((Toot.creation_date.year == a.year),
+                                                  (Toot.creation_date.month == a.month),
+                                                  (Toot.creation_date.day == a.day))
+        if requested_instance is not 0:
+            selected_toots = selected_toots.where(Toot.instance_id == requested_instance)
+
+        return render_template('template.tpl',
+                               toots=selected_toots,
+                               instances_names=instances_names)
+    else:
+        return render_template('template.tpl',
+                               toots=selected_toots,
+                               instances_names=instances_names)
 
 
 if __name__ == '__main__':
@@ -253,6 +280,8 @@ if __name__ == '__main__':
                                    defaults={'creation_date': datetime.now(),
                                              'lock': False,
                                              'blacklisted': False})
+
+    app.run(debug=True)
 
     to_fetch = list()
     for k in HASHTAGS:
@@ -266,5 +295,3 @@ if __name__ == '__main__':
     # <2Mbits/s download, 25-50% CPU, 1.5/2Go Ram, <10% HDD use on my core I7-4710 laptop
     with Pool(64) as p:
         result = p.map(get_hashtags, to_fetch)
-
-    app.run(debug=True)

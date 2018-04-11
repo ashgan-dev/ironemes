@@ -24,55 +24,87 @@
                 <a href="index.html">Index</a>
             </li>
             <li class="breadcrumb-item active">
-                {{toots[0]}}
+
             </li>
         </ol>
-        <div class="row">
-            <div class="col-12">
-                <h6 class="page-header">
-                    {{ nb_toots }} toots exprimés. <a href="#" target="_blank">données brutes (format JSON)</a>
-                </h6>
-            </div>
-        </div>
-        {%- for i in toots: %}
-
         <div class="row">
             <div class="col-12">
                 <!-- debut -->
                 <div class="card mb-3">
                     <div class="card-header">
                         <h6>
-                            <a href="{{ i['account']['url'] }}" target="_blank">
-                                <img src="{{ i['account']['avatar'] }}" height="24" width="24">
-                            </a>
-                            <a href="{{ i['account']['url'] }}" target="_blank">
-                                {% if i['account']['display_name'] != '': %}
-                                    {{ i['account']['display_name'] }}
-                                {% else: %}
-                                    {{ i['account']['username'] }}
-                                {% endif %}
-                            </a>
+
                         </h6>
                     </div>
                     <div class="card-body">
-                        <div class="table-responsive">
-                            {{ i['content'] }}
-                        </div>
-                    </div>
-                    <div class="card-footer small text-muted">
-                        <span id="{{ i['id'] }}"></span>
-                        Tooté le <a href="{{ i['url'] }}" target="_blank">{{ i['creation_date'] | datetimeformat }}</a> - favoris:
-                        {% if i['favourite_count'] == 0: %}
-                            {{ i['favourite_count'] }} <i class="fa fa-star-o"></i>
-                        {% else: %}
-                            {{ i['favourite_count'] }} <i class="fa fa-star"></i>
-                        {% endif %}
-                         - retoots: {{ i['reblog_count'] }} <i class="fa fa-refresh"></i>
+                        <form role="form" data-toggle="validator" action="{{ url_for('start_page') }}" method="POST">
+                            <div class="form-group">
+                                Instance:
+                                <select class="form-control" name="instance">
+                                    <option value="0">--Toutes--</option>
+                                    {%- for h in instances_names: %}
+                                        <option value="{{ h.id }}">{{ h.domain }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                Date:
+                                <input type="date" name="date">
+                            </div>
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-default">envoyer</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
-        {% endfor %}
+        {% if toots: %}
+            {%- for i in toots: %}
+                <div class="row">
+                    <div class="col-12">
+                        <!-- debut -->
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6>
+                                    <a href="{{ i['account']['url'] }}" target="_blank">
+                                        <img src="{{ i['account']['avatar'] }}" height="24" width="24">
+                                    </a>
+                                    <a href="{{ i['account']['url'] }}" target="_blank">
+                                        {% if i['account']['display_name'] != '': %}
+                                            {{ i['account']['display_name'] }}
+                                        {% else: %}
+                                            {{ i['account']['username'] }}
+                                        {% endif %}
+                                    </a>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    {{ i['content'] }}
+                                </div>
+                            </div>
+                            <div class="card-footer small text-muted">
+                                <span id="{{ i['id'] }}"></span>
+                                Tooté le <a href="{{ i['url'] }}" target="_blank">{{ i['creation_date'] | datetimeformat }}</a> - favoris:
+                                {% if i['favourite_count'] == 0: %}
+                                    {{ i['favourite_count'] }} <i class="fa fa-star-o"></i>
+                                {% else: %}
+                                    {{ i['favourite_count'] }} <i class="fa fa-star"></i>
+                                {% endif %}
+                                 - retoots: {{ i['reblog_count'] }} <i class="fa fa-refresh"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="row">
+                <div class="col-12">
+                    Aucun toot trouve :(
+                </div>
+            </div>
+        {% endif %}
     </div>
     <!-- /.container-fluid-->
 
