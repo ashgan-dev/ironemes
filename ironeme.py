@@ -15,6 +15,7 @@ from html2text import HTML2Text
 import arrow
 import jinja2
 from path import path
+from natsort import humansorted
 
 from MastodonClass import MastodonClass as Mstdn
 
@@ -80,7 +81,7 @@ def render_page():
     for i in UPLOAD_DIR.walkfiles('*.html'):
         html_files.append(i.name)
     html_files.remove('index.html')
-    index_html = template.render(html_files=html_files)
+    index_html = template.render(html_files=humansorted(html_files))
 
     with open(HTML_INDEX_FILE, 'wb') as outfile:
         outfile.write(index_html.encode('utf-8'))
