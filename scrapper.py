@@ -1,25 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from path import Path
-from configparser import ConfigParser
-from models import *
 from html2text import HTML2Text
 from urllib.parse import urlparse
 from datetime import datetime
 from multiprocessing.pool import Pool
 from models import *
 
-ROOT = Path('.').realpath()
+# ROOT = Path('.').realpath()
 API_URL = 'https://{domain}/api/v1/timelines/tag/{hashtag}?limit={limit}&since_id={since_id}'
 HASHTAGS = ['ironème', 'ironèmes', 'ironeme', 'ironemes']
-
-Path.chdir(ROOT)
-
-# fetch/define config
-configini = ROOT / 'config.ini'
-config = ConfigParser()
-config.read(configini)
+#
+# Path.chdir(ROOT)
+#
+# # fetch/define config
+# configini = ROOT / 'config.ini'
+# config = ConfigParser()
+# config.read(configini)
 
 
 def to_text(html, rehtml=False):
@@ -46,7 +43,7 @@ def get_hashtags(instance_url):
     """
     fetches all toots for a given hashtag on given instance
     """
-    print(instance_url)
+    # print(instance_url)
     # current instance URL
     next_fetch = instance_url
     # current instance DB details already on DB
@@ -144,7 +141,7 @@ def get_hashtags(instance_url):
 
 
 if __name__ == '__main__':
-    # db.connect()
+    db.connect()
     db.create_tables([Instance, Account, Toot, MissedLink, Hashtags])
 
     domain = urlparse(config['Auth']['instance']).netloc
