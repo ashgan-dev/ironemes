@@ -31,7 +31,7 @@ app.add_template_filter(datetimeformat2)
 def start_page():
     """main page"""
     # some needed infos
-    instances_names = Instance.select()
+    instances_names = Instance.select().order_by(Instance.domain.asc())
     selected_toots = Toot.select().join(Account).order_by(Toot.creation_date.desc())
 
     if request.method == 'POST':
@@ -68,5 +68,19 @@ def start_page():
                                requested_date='')
 
 
+@app.route('/search', methods=['POST', 'GET'])
+def search():
+    """
+    search toots content
+    """
+    if request.method == 'POST':
+        searched_text = request.form['search']
+        selected_toots = Toot.select().where(Toot.content.contains(searched_text)).join(Account).order_by(Toot.creation_date.desc())
+        return render_template('search.tpl',
+                               toots=selected_toots)
+    else:
+        return render_template('search.tpl')
+
+
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)

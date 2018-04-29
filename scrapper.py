@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from html2text import HTML2Text
-from urllib.parse import urlparse
 from datetime import datetime
 from multiprocessing.pool import Pool
+from urllib.parse import urlparse
+
+import requests
+from html2text import HTML2Text
+from bs4 import BeautifulSoup
+
 from models import *
 
 # ROOT = Path('.').realpath()
@@ -43,13 +47,14 @@ def get_hashtags(instance_url):
     """
     fetches all toots for a given hashtag on given instance
     """
-    # print(instance_url)
     # current instance URL
     next_fetch = instance_url
     # current instance DB details already on DB
     local_instance_url = urlparse(instance_url).netloc
+    # if local_instance_url in ('cafe.des-blogueurs.org', ):
     instance_details = Instance.get(domain=local_instance_url)
-
+    # else:
+    #     return
     # hashtags details:
     # houla, cuila y pique!
     tag_name = instance_url.split('?')[0].split('/')[-1]
@@ -68,6 +73,7 @@ def get_hashtags(instance_url):
             local_toots = requests.get(next_fetch,
                                        timeout=120)
         except:
+            print('oups', instance_url)
             # something bad happened, store URL to fetch later
             MissedLink.get_or_create(url=next_fetch,
                                      defaults={'time_misses': 0})
@@ -78,6 +84,7 @@ def get_hashtags(instance_url):
                 for toot in local_toots.json():
                     account = toot['account']['acct']
                     instance = urlparse(toot['url']).netloc
+                    account_profile_url = toot['account']['url']
                     # get instance ID or get a new one
                     instance_id, _ = Instance.get_or_create(domain=instance,
                                                             defaults={'creation_date': datetime.now(),
@@ -100,6 +107,20 @@ def get_hashtags(instance_url):
                                                                            'avatar': toot['account']['avatar'],
                                                                            'instance_id': instance_id.id,
                                                                            'blacklisted': False})
+                        # we need to update existing accounts with last fetched avatar
+                        # no matter what, we want a profile pic!
+                        # yes, I should have break thius stuff in way more parts. shame.
+                        avatar_semi_url = BeautifulSoup(requests.get(account_profile_url).content, "lxml")
+                        avatar_url = avatar_semi_url.find_all(class_='u-photo')[0]['src']
+
+                        # we got mostly absolute URL, so we deal with it :/
+                        if avatar_url[0:8] != 'https://':
+                            avatar = 'https://' + instance + avatar_url
+                        else:
+                            avatar = avatar_url
+                        print(avatar)
+                        account_saved.avatar = avatar
+                        account_saved.save()
 
                         toot_saved, _ = Toot.get_or_create(url=toot['url'],
                                                            defaults={'creation_date': datetime.strptime(toot['created_at'],
@@ -160,5 +181,5 @@ if __name__ == '__main__':
     # we're *not really* CPU/mem/HDD bound. so yepekai!
     # for info, with 32 workers, on average:
     # <2Mbits/s download, 25-50% CPU, 1.5/2Go Ram, <10% HDD use on my core I7-4710 laptop
-    with Pool(64) as p:
+    with Pool(4) as p:
         result = p.map(get_hashtags, to_fetch)

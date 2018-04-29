@@ -19,11 +19,11 @@
 <body id='page-top'>
     <div class="container-fluid">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item active">
-              Index
-            </li>
             <li class="breadcrumb-item">
-                <a href={{ url_for('search') }}>Recherche</a>
+              <a href={{ url_for('start_page') }}>Index</a>
+            </li>
+            <li class="breadcrumb-item active">
+                Recherche
             </li>
         </ol>
         <div class="row">
@@ -32,35 +32,14 @@
                 <div class="card mb-3">
                     <div class="card-header">
                         <h6>
-                            {%- if chosen_instance == 0: -%}
-                                {%- if requested_date != '': -%}
-                                    {{ toots| count }} toots repertoriés sur toutes les instances le {{ requested_date | datetimeformat2 }}
-                                {%- else -%}
-                                    {{ toots| count }} toots repertoriés sur toutes les instances
-                                {%- endif -%}
-                            {%- else -%}
-                                {%- if requested_date != '': -%}
-                                    {{ toots| count }} toots repertoriés sur {{ chosen_instance }} le {{ requested_date | datetimeformat2 }}
-                                {%- else -%}
-                                    {{ toots| count }} toots repertoriés sur {{ chosen_instance }}
-                                {%- endif -%}
-                            {%- endif -%}
+                            rechercher un ironème
                         </h6>
                     </div>
                     <div class="card-body">
-                        <form role="form" data-toggle="validator" action="{{ url_for('start_page') }}" method="POST">
+                        <form role="form" data-toggle="validator" action="{{ url_for('search') }}" method="POST">
                             <div class="form-group">
-                                Instance:
-                                <select class="form-control" name="instance">
-                                    <option value="0">--Toutes--</option>
-                                    {% for h in instances_names: -%}
-                                        <option value="{{ h.id }}">{{ h.domain }}</option>
-                                    {% endfor -%}
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                Date:
-                                <input type="date" name="date">
+                                Entrez votre recherche:
+                                <input type="text" name="search">
                             </div>
                             <div class="form-group">
                                 <button type="submit" class="btn btn-default">envoyer</button>
@@ -76,22 +55,10 @@
                                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
                                     </div>
                                     <div class="modal-body">
-                                        <p>Utilisez le formulaire pour filtrer les toots.<br />Quelques exemples:</p>
-                                        <ul>
-                                            <li>
-                                                Pour consulter tous les toots, sélectionnez "toutes" dans le choix d'instance, ne saisissez aucune date.
-                                            </li>
-                                            <li>
-                                                Pour consulter tous les toots d'une instance en particulier, sélectionnez la dans le menu déroulant sans saisir de date.
-                                            </li>
-                                            <li>
-                                                Pour consulter tous les toots d'une date en particulier, saisissez la date choisie et sélectionner "toutes" dans le choix d'instance.
-                                            </li>
-                                            <li>
-                                                Je vous raconte même pas ce qu'il se passe quand on mixe la sélection des dates avec le choix des instances ;)
-                                            </li>
-                                        </ul>
-                                        <p>Après un (parfois long) moment, les toots choisis s'affichent.</p>
+                                        <p>
+                                            Utilisez le formulaire pour chercher un mot, une expression ou un groupe de lettre.<br />
+                                            Si un ou plusieurs toot contient votre expression, ils s'afficheront.
+                                        </p>
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
@@ -141,12 +108,6 @@
                     </div>
                 </div>
             {%- endfor -%}
-        {%- else -%}
-            <div class="row">
-                <div class="col-12">
-                    Aucun toot trouvé 😞
-                </div>
-            </div>
         {%- endif -%}
     </div>
     <!-- Scroll to Top Button-->
