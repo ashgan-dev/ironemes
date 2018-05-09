@@ -59,8 +59,12 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                Date:
-                                <input type="date" name="date">
+                                Du:
+                                <input type="date" name="date_debut">
+                            </div>
+                            <div class="form-group">
+                                Au:
+                                <input type="date" name="date_fin">
                             </div>
                             <div class="form-group">
                                 <button type="submit" class="btn btn-default">envoyer</button>

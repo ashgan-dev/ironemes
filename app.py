@@ -35,7 +35,8 @@ def start_page():
     selected_toots = Toot.select().join(Account).order_by(Toot.creation_date.desc())
 
     if request.method == 'POST':
-        requested_date = request.form['date']
+        requested_date = request.form['date_debut']
+        date_fin = request.form['date_fin']
         requested_instance = int(request.form['instance'])
         if requested_instance != 0:
             requested_instance_name = Instance.get(Instance.id == requested_instance).domain
@@ -44,14 +45,27 @@ def start_page():
 
         # nice, we can filter more afterward!
         # let's go.
-        if requested_date is not '':
+        if requested_date is not '' and date_fin is not '':
             # okay, *THIS* is a joke.
             # no direct date filter/comparaison on a datetime?
             # seriously?!? even MYSQL has a date() damn fonction!!!
             a = arrow.get(requested_date, 'YYYY-MM-DD')
+            selected_toots = selected_toots.where((Toot.creation_date.year >= a.year),
+                                                  (Toot.creation_date.month >= a.month),
+                                                  (Toot.creation_date.day >= a.day))
+        elif requested_date is not '':
+            a = arrow.get(requested_date, 'YYYY-MM-DD')
             selected_toots = selected_toots.where((Toot.creation_date.year == a.year),
                                                   (Toot.creation_date.month == a.month),
                                                   (Toot.creation_date.day == a.day))
+        if date_fin is not '':
+            # okay, *THIS* is a joke.
+            # no direct date filter/comparaison on a datetime?
+            # seriously?!? even MYSQL has a date() damn fonction!!!
+            a = arrow.get(date_fin, 'YYYY-MM-DD')
+            selected_toots = selected_toots.where((Toot.creation_date.year <= a.year),
+                                                  (Toot.creation_date.month <= a.month),
+                                                  (Toot.creation_date.day <= a.day))
         if requested_instance is not 0:
             selected_toots = selected_toots.where(Toot.instance_id == requested_instance)
 

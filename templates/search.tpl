@@ -62,6 +62,7 @@
                                         <p>
                                             Utilisez le formulaire pour chercher un mot, une expression ou un groupe de lettre.<br />
                                             Si un ou plusieurs toot contient votre expression, ils s'afficheront.
+                                            <br />Pour chercher un user en particulier, cherchez @username.
                                         </p>
                                     </div>
                                     <div class="modal-footer">
