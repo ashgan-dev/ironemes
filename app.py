@@ -65,7 +65,8 @@ def start_page():
                                toots=selected_toots.limit(30),
                                instances_names=instances_names,
                                chosen_instance=0,
-                               requested_date='')
+                               requested_date='',
+                               get=1)
 
 
 @app.route('/search', methods=['POST', 'GET'])
@@ -75,12 +76,16 @@ def search():
     """
     if request.method == 'POST':
         searched_text = request.form['search']
-        selected_toots = Toot.select().where(Toot.content.contains(searched_text)).join(Account).order_by(Toot.creation_date.desc())
+        if searched_text[0] == '@':
+            selected_toots = Toot.select().where(Toot.account.username == searched_text[1:]).join(Account).order_by(Toot.creation_date.desc())
+        else:
+            selected_toots = Toot.select().where(Toot.content.contains(searched_text)).join(Account).order_by(Toot.creation_date.desc())
         return render_template('search.tpl',
-                               toots=selected_toots)
+                               toots=selected_toots,
+                               requested_string=searched_text)
     else:
         return render_template('search.tpl')
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()

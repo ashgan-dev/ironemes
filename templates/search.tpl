@@ -32,7 +32,11 @@
                 <div class="card mb-3">
                     <div class="card-header">
                         <h6>
-                            rechercher un ironème
+                            {%- if toots: -%}
+                                    {{ toots| count }} toots contenant le terme "{{ requested_string }}"
+                            {%- else -%}
+                                rechercher un ironème
+                            {%- endif -%}
                         </h6>
                     </div>
                     <div class="card-body">

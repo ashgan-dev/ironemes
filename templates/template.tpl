@@ -34,15 +34,15 @@
                         <h6>
                             {%- if chosen_instance == 0: -%}
                                 {%- if requested_date != '': -%}
-                                    {{ toots| count }} toots repertoriés sur toutes les instances le {{ requested_date | datetimeformat2 }}
+                                    {{ toots| count }} toots répertoriés sur toutes les instances le {{ requested_date | datetimeformat2 }}
                                 {%- else -%}
-                                    {{ toots| count }} toots repertoriés sur toutes les instances
+                                    {{ toots| count }} toots répertoriés sur toutes les instances
                                 {%- endif -%}
                             {%- else -%}
                                 {%- if requested_date != '': -%}
-                                    {{ toots| count }} toots repertoriés sur {{ chosen_instance }} le {{ requested_date | datetimeformat2 }}
+                                    {{ toots| count }} toots répertoriés sur {{ chosen_instance }} le {{ requested_date | datetimeformat2 }}
                                 {%- else -%}
-                                    {{ toots| count }} toots repertoriés sur {{ chosen_instance }}
+                                    {{ toots| count }} toots répertoriés sur {{ chosen_instance }}
                                 {%- endif -%}
                             {%- endif -%}
                         </h6>
@@ -103,6 +103,12 @@
                 </div>
             </div>
         </div>
+        {% if get == 1: -%}
+        <div class="alert alert-warning alert-dismissable col-6 offset-3">
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+            <p class="text-center">Voici les 30 derniers ironèmes.<br />Pour en voir plus, utilisez le formulaire au dessus ou utilisez la recherche.</p>
+        </div>
+        {% endif -%}
         {% if toots: -%}
             {%- for i in toots: -%}
                 <div class="row">
