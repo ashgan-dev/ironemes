@@ -69,13 +69,13 @@ def start_page():
         if requested_instance is not 0:
             selected_toots = selected_toots.where(Toot.instance_id == requested_instance)
 
-        return render_template('template.tpl',
+        return render_template('index.tpl',
                                toots=selected_toots,
                                instances_names=instances_names,
                                chosen_instance=requested_instance_name,
                                requested_date=requested_date)
     else:
-        return render_template('template.tpl',
+        return render_template('index.tpl',
                                toots=selected_toots.limit(30),
                                instances_names=instances_names,
                                chosen_instance=0,
@@ -96,10 +96,11 @@ def search():
             selected_toots = Toot.select().where(Toot.content.contains(searched_text)).join(Account).order_by(Toot.creation_date.desc())
         return render_template('search.tpl',
                                toots=selected_toots,
-                               requested_string=searched_text)
+                               requested_string=searched_text,
+                               post=1)
     else:
         return render_template('search.tpl')
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0', debug=True)
