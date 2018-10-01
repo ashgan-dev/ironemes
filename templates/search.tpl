@@ -24,7 +24,7 @@
                     <div class="card-body">
                         <form role="form" data-toggle="validator" action="{{ url_for('search') }}" method="POST">
                             <div class="form-group">
-                                Entrez votre recherche:
+                                Entrez votre recherche :
                                 <input type="text" name="search">
                             </div>
                             <div class="form-group">
@@ -32,7 +32,7 @@
                             </div>
                         </form>
                         <small data-toggle="modal" data-target="#myModal">
-                            <i class="fa fa-support text-danger"></i> un peu d'aide?
+                            <i class="fa fa-support text-danger"></i> Un peu d'aide ?
                         </small>
                         <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
                             <div class="modal-dialog">
@@ -42,13 +42,13 @@
                                     </div>
                                     <div class="modal-body">
                                         <p>
-                                            Utilisez le formulaire pour chercher un mot, une expression ou un groupe de lettre.<br />
-                                            Si un ou plusieurs toot contient votre expression, ils s'afficheront.
-                                            <br />Pour chercher un user en particulier, cherchez @username.
+                                            Utilisez le formulaire pour chercher un mot, une expression ou un groupe de lettres.<br />
+                                            Si un ou plusieurs toots contiennent votre expression, ils s'afficheront.
+                                            <br />Pour chercher un utilisateur en particulier, cherchez @username.
                                         </p>
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                        <button type="button" class="btn btn-default" data-dismiss="modal">Fermer</button>
                                     </div>
                                 </div>
                             </div>
