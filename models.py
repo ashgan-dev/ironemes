@@ -14,10 +14,10 @@ config.read(configini)
 
 # for small configs, use sqlite, with small number of worker (tested with 4 at best on my laptop)
 # big irons, go full blast!
-db = PostgresqlDatabase(config['DB']['database'],
-                        user=config['DB']['user'],
-                        password=config['DB']['password'])
-# db = SqliteDatabase('app.db')
+#db = PostgresqlDatabase(config['DB']['database'],
+#                        user=config['DB']['user'],
+#                        password=config['DB']['password'])
+db = SqliteDatabase('app.db')
 
 
 class Instance(Model):

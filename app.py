@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import arrow
+import re
 from flask import Flask, render_template, request
 
 from models import *
@@ -18,13 +19,25 @@ def datetimeformat2(value, date_format='DD/MM/YYYY'):
     """
     formating date for templates
     """
-    return arrow.get(value).format(date_format)
+    return arrow.get(value).format(date_format).strip()
 
+
+def removetag(value):
+    """
+    formating date for templates
+    """
+    return value.replace('#ironèmes', '')\
+                .replace('#ironemes', '') \
+                .replace('#ironème', '') \
+                .replace('#ironeme', '')\
+                .rstrip('<br/>')\
+                .strip()
 
 app = Flask(__name__)
 
 app.add_template_filter(datetimeformat)
 app.add_template_filter(datetimeformat2)
+app.add_template_filter(removetag)
 
 
 @app.route('/', methods=['POST', 'GET'])
@@ -59,9 +72,6 @@ def start_page():
                                                   (Toot.creation_date.month == a.month),
                                                   (Toot.creation_date.day == a.day))
         if date_fin is not '':
-            # okay, *THIS* is a joke.
-            # no direct date filter/comparaison on a datetime?
-            # seriously?!? even MYSQL has a date() damn fonction!!!
             a = arrow.get(date_fin, 'YYYY-MM-DD')
             selected_toots = selected_toots.where((Toot.creation_date.year <= a.year),
                                                   (Toot.creation_date.month <= a.month),
@@ -86,10 +96,12 @@ def start_page():
 @app.route('/search', methods=['POST', 'GET'])
 def search():
     """
-    search toots content
+    search toots content or @user
     """
     if request.method == 'POST':
         searched_text = request.form['search']
+        if len(searched_text) == 0:
+            return render_template('search.tpl')
         if searched_text[0] == '@':
             selected_toots = Toot.select().where(Toot.account.username == searched_text[1:]).join(Account).order_by(Toot.creation_date.desc())
         else:
@@ -100,6 +112,21 @@ def search():
                                post=1)
     else:
         return render_template('search.tpl')
+
+
+@app.route('/search/<search_string>', methods=['GET'])
+def get_string(search_string):
+    """
+    search toots content or @user
+    """
+    if search_string[0] == '@':
+        selected_toots = Toot.select().where(Toot.account.username == search_string[1:]).join(Account).order_by(Toot.creation_date.desc())
+    else:
+        selected_toots = Toot.select().where(Toot.content.contains(search_string)).join(Account).order_by(Toot.creation_date.desc())
+    return render_template('search.tpl',
+                           toots=selected_toots,
+                           requested_string=search_string,
+                           post=1)
 
 
 if __name__ == '__main__':
